@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Models of Orders
+model Product {
+  id    String @id @default(uuid())
+  name  String
+  price Float @default(0)
+  recipes Recipe[]
+  orderItems Order[]
+}
+
+// Store
+model Ingredient {
+  id String @id @default(uuid())
+  name String
+  unit String
+  stockQTY Float  @default(0)
+  recipes Recipe[]
+  description String?
+}
+
+// Recipe
+model Recipe {
+  id String @id @default(uuid())
+  productId String
+  ingredientId String
+  quantity Float     // Quantity used in the recipe
+  
+  product Product @relation(fields: [productId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+}
+
+// Sell Register
+model Order {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  quantity Int
+  total Float @default(0)
+  status String @default("PENDING") 
+
+  productId String
+  product Product @relation(fields: [productId], references: [id])
+
+  userId String?
+  user User? @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id String @id @default(uuid())
+  email String? @unique
+  name String?
+  password String?
+  role String @default("USER")
+  createdAt DateTime @default(now())
+
+  balance Float @default(0)
+
+  orders Order[]
+}
