@@ -5,14 +5,10 @@ import { PrismaClient } from '@prisma/client/extension';
 import { Ingredient } from './entities/ingredient.entity';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  async onModuleInit() {
-    await this.$connect();
-  }
+export class IngredientsService{
 
-  async onModuleDestroy() {
-    await this.$disconnect();
-  }
+  constructor(private prisma: PrismaClient) {}
+
 
   async addStock(IngredientId: string, amount: number) {
     return this.prisma.ingredient.update({

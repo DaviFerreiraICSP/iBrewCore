@@ -1,18 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { SignUpDto } from './dto/signUp-auth.dto';
 import { LoginDto } from './dto/login-auth.dto';
-import { PrismaClient } from '@prisma/client/extension';
-import { OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { PrismaService } from 'prisma/prisma.service';
+import { UpdateUserDto } from './dto/update-auth.dto';
+import { userInfo } from 'os';
+
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  async onModuleInit() {
-    await this.$connect();
-  }
+export class AuthService {
 
-  async onModuleDestroy() {
-    await this.$disconnect();
-  }
+  constructor(
+    private prisma: PrismaService,
+    private JwtService: JwtService
+  ) { }
 
   async createUser(signUpDto: SignUpDto) {
     const alreadyExists = await this.prisma.user.findUnique({
@@ -23,13 +25,117 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       throw new Error('User Already Exists')
     }
 
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(signUpDto.password, salt);
+
     return this.prisma.user.create({
       data: {
-        name: signUpDto.name,
-        email: signUpDto.email,
-        password: signUpDto.password,
+        ...signUpDto,
+        password: hashedPassword
       }
+    });
+  }
+
+  async login(loginDto: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: {  email: loginDto.email }
     })
+
+    const isMatch = await bcrypt.compare(this.prisma.loginDto.password, user.password);
+    if (!isMatch) throw new UnauthorizedException('Invalid Credentials');
+    
+    const payload = { 
+      sub: user.id,
+      email: user.email,
+      role: user.role
+    };
+
+    return {
+      access_token: this.JwtService.sign(payload),
+    };
+  }
+
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: id } });
+
+    if (!user) {
+      throw new Error('User Not Found');
+    }
+
+    if (user.role !== 'ADMIN') {
+      throw new UnauthorizedException('Unauthorized Action');
+    }
+
+    if (updateUserDto.password) {
+      const salt = await bcrypt.genSalt(10);
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, salt);
+    }
+
+    if (updateUserDto.email) {
+      const emailExists = await this.prisma.user.findUnique({
+        where: { 
+          email: updateUserDto.email, 
+          id: { not: id }
+         }
+      });
+      if (emailExists) {
+        throw new Error('Email Already In Use');
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id: id },
+      data: updateUserDto
+    })
+
+  }
+
+  async deleteUser(id: string) {
+    const idUser = await this.prisma.user.findUnique({
+      where: { id: id}
+    })
+
+    if (!idUser) {
+      throw new Error('User Not Found');
+    }
+    if (idUser.role !== 'ADMIN') {
+      throw new UnauthorizedException('Unauthorized Action');
+    }
+
+    return this.prisma.user.delete({
+      where: { id: id }
+    });
+  }
+
+  async getProfile(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+    if (!user) {
+      throw new Error('User Not Found');
+    }
+    return user;
+  }
+
+  async getAllUsers() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
   }
 
 }

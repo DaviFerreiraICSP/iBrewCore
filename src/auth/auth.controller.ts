@@ -1,34 +1,41 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/signUp-auth.dto';
-import { UpdateAuthDto } from './dto/login-auth.dto';
+import { PrismaService } from 'prisma/prisma.service';
+import { SignUpDto } from './dto/signUp-auth.dto';
+import { LoginDto } from './dto/login-auth.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+  ) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  @Post('signup')
+  async singUp(@Body() SignUpDto: SignUpDto) {
+    return this.authService.createUser(SignUpDto);
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  @Post('login')
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Delete('delete/:id')
+  async delete(@Param('id') id: string) {
+    return this.authService.deleteUser(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('all')
+  async getAll() {
+    return this.authService.getAllUsers();
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+  async getProfile(@Param('id') id: string) {
+    return this.authService.getProfile(id);
   }
 }

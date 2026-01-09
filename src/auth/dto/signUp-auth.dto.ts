@@ -1,4 +1,4 @@
-import { IsEmail, IsString, Matches, MaxLength, Min, MinLength } from "class-validator";
+import { IsEmail, IsEnum, IsOptional, IsString, Matches, MaxLength, Min, MinLength } from "class-validator";
 
 
 export class SignUpDto {
@@ -14,5 +14,8 @@ export class SignUpDto {
     @MaxLength(20, { message: 'A senha deve ter no máximo 20 caracteres' })
     @MinLength(8, { message: 'A senha deve ter no mínimo 8 caracteres' })
     password: string;
-
+    
+    @IsOptional()
+    @IsEnum(['SELLER', 'ADMIN', 'CUSTOMER'], { message: 'Role must be either SELLER, ADMIN, or CUSTOMER' })
+    role: 'SELLER' | 'ADMIN' | 'CUSTOMER';
 }
