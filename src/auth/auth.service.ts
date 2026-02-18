@@ -5,8 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-auth.dto';
-import { userInfo } from 'os';
-
+import { PrismaClient } from 'src/prisma/generated';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +40,11 @@ export class AuthService {
       where: {  email: loginDto.email }
     })
 
-    const isMatch = await bcrypt.compare(this.prisma.loginDto.password, user.password);
+    if (!user || !user.password) {
+      throw new UnauthorizedException('Invalid Credentials');
+    }
+
+    const isMatch = await bcrypt.compare(loginDto.password!, user.password);
     if (!isMatch) throw new UnauthorizedException('Invalid Credentials');
     
     const payload = { 
@@ -71,8 +74,9 @@ export class AuthService {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, salt);
     }
 
+
     if (updateUserDto.email) {
-      const emailExists = await this.prisma.user.findUnique({
+      const emailExists = await this.prisma.user.findFirst({
         where: { 
           email: updateUserDto.email, 
           id: { not: id }
@@ -116,7 +120,6 @@ export class AuthService {
         email: true,
         role: true,
         createdAt: true,
-        updatedAt: true
       }
     });
     if (!user) {
@@ -133,7 +136,6 @@ export class AuthService {
         email: true,
         role: true,
         createdAt: true,
-        updatedAt: true
       }
     });
   }
