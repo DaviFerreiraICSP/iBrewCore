@@ -1,0 +1,274 @@
+:root {
+  --white: #FFFFFF;
+  --bg-gray: #F1F5F9; /* Slate 100 */
+  --slate-200: #E2E8F0;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-500: #64748B;
+  
+  --main-yellow: #ffd27f; 
+  --sub-yellow: #4ca2b5;
+  --blue: #003f82; 
+  --dark-blue: #000b21;
+  --black: #1A1A1A;
+  
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 32px 64px rgba(0, 0, 0, 0.08), inset 0 2px 4px rgba(255, 255, 255, 0.8);
+  --glass-blur: blur(40px);
+
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light;
+  color: var(--black);
+  background-color: var(--white);
+
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none; /* Mobile app feel */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body, #root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* No document scrolling */
+  position: fixed;
+}
+
+body {
+  background-color: var(--bg-gray);
+  background-attachment: fixed;
+  color: var(--black);
+}
+
+/* Moving Background Blobs */
+.bg-blobs {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  filter: blur(80px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.bg-blobs::after {
+  content: '';
+  position: absolute;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  animation: move 25s infinite alternate;
+  animation-delay: -2s;
+  background: rgba(148, 163, 184, 0.15); /* slate-400 */
+  top: 5%;
+  right: 35%;
+}
+
+.blob {
+  position: absolute;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  animation: move 22s infinite alternate;
+}
+
+.blob-1 {
+  background: rgba(100, 116, 139, 0.1); /* slate-500 */
+  top: -15%;
+  left: -5%;
+  animation-duration: 28s;
+}
+
+.blob-2 {
+  background: rgba(203, 213, 225, 0.2); /* slate-300 */
+  bottom: -15%;
+  right: -5%;
+  animation-delay: -6s;
+  animation-duration: 32s;
+}
+
+.blob-3 {
+  background: rgba(148, 163, 184, 0.12); /* slate-400 */
+  top: 35%;
+  left: 30%;
+  animation-duration: 24s;
+  animation-delay: -12s;
+}
+
+@keyframes move {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(10vw, 5vh) scale(1.1); }
+  66% { transform: translate(-5vw, 15vh) scale(0.9); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Glassmorphism Utility */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 28px; /* Extra rounded */
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Liquid Glass Button */
+.liquid-glass, .liquid-glass-red {
+  background: rgba(26, 26, 26, 0.95);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 700;
+  padding: 12px 24px;
+}
+
+.liquid-glass-red {
+  background: rgba(214, 40, 40, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.liquid-glass::before, .liquid-glass-red::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+  transform: translate(-15%, -15%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.liquid-glass:hover, .liquid-glass-red:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 12px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.liquid-glass:hover::before, .liquid-glass-red:hover::before {
+  transform: translate(15%, 15%);
+}
+
+.liquid-glass:active, .liquid-glass-red:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Base Components - Touch Optimized */
+button {
+  border-radius: 20px; /* Extra rounded */
+  border: none;
+  padding: 12px 24px;
+  min-height: 48px; /* Touch target */
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: linear-gradient(135deg, var(--blue), var(--sub-yellow));
+  color: #FFF;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+input {
+  width: 100%;
+  height: 52px; /* Large touch target */
+  padding: 0 16px;
+  border-radius: 20px; /* Extra rounded */
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.8);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--main-yellow);
+  background: #FFF;
+  box-shadow: 0 0 0 4px rgba(217, 160, 54, 0.1);
+}
+
+/* Custom Scrollbar for App Containers */
+.app-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.1) transparent;
+}
+
+.app-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.app-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 10px;
+}
+
+/* Hide number input spinners globally */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
