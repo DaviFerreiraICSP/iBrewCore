@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import GlassCard from '../components/GlassCard';
+import ImageCropper from '../components/ImageCropper';
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuthStore();
@@ -22,6 +23,7 @@ const Profile: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sync state with user when it changes in the store
@@ -51,9 +53,9 @@ const Profile: React.FC = () => {
     setTimeout(() => setSuccessToast(null), 3000);
   };
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (file: File | Blob) => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', file, 'avatar.jpg');
 
     try {
       setIsSubmitting(true);
@@ -63,6 +65,7 @@ const Profile: React.FC = () => {
       const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
       const newAvatarUrl = `${baseUrl}${res.data.url}`;
       setAvatarUrl(newAvatarUrl);
+      setImageToCrop(null);
       
       // Auto-save avatar update
       if (user) {
@@ -74,6 +77,17 @@ const Profile: React.FC = () => {
       setError('Falha ao enviar imagem.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageToCrop(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -137,16 +151,13 @@ const Profile: React.FC = () => {
                   transition: 'all 0.3s ease'
                 }}
               >
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file);
-                  }}
-                  style={{ display: 'none' }} 
-                  accept="image/*"
-                />
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleSelectFile}
+                    style={{ display: 'none' }} 
+                    accept="image/*"
+                  />
                 
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -261,6 +272,17 @@ const Profile: React.FC = () => {
           </form>
         </GlassCard>
       </div>
+
+      <AnimatePresence>
+        {imageToCrop && (
+          <ImageCropper 
+            image={imageToCrop} 
+            aspect={1} 
+            onCropComplete={handleFileUpload} 
+            onCancel={() => setImageToCrop(null)} 
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {successToast && (

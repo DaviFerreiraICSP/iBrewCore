@@ -1,0 +1,59 @@
+{
+  "common": {
+    "systemName": "iBranch System",
+    "saveAll": "Save All",
+    "saved": "Saved!",
+    "loading": "Loading...",
+    "error": "Error processing request"
+  },
+  "settings": {
+    "title": "Settings Panel",
+    "subtitle": "Personalize every detail of your premium experience.",
+    "bank": {
+      "title": "Bank Details & PIX",
+      "subtitle": "Where you receive your sales.",
+      "institution": "Financial Institution",
+      "pix": "Primary PIX Key"
+    },
+    "fees": {
+      "title": "Operation Fees",
+      "subtitle": "Commissions deducted from card sales.",
+      "debit": "Debit Fee",
+      "credit": "Credit Fee"
+    },
+    "languages": {
+      "title": "System Languages",
+      "subtitle": "Select the global translation of the interface.",
+      "pt": "Portuguese",
+      "en": "English",
+      "es": "Spanish",
+      "de": "German"
+    },
+    "audio": {
+      "title": "Sound & Volume",
+      "subtitle": "Audio feedback (Auto-save).",
+      "dragHint": "Drag to Adjust",
+      "enabled": "Sound Enabled",
+      "muted": "Sound Muted"
+    }
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "pos": "POS",
+    "products": "Products",
+    "categories": "Categories",
+    "sales": "Sales",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "General Panel",
+    "subtitle": "Track your iBranch performance in real time.",
+    "revenue": "Today's Revenue",
+    "sales": "Today's Sales",
+    "lowStock": "Low Stock Items"
+  },
+  "categories": {
+    "linked_products": "products in category"
+  }
+}

@@ -7,16 +7,21 @@ import {
   History, 
   LogOut, 
   Tags,
-  Settings
+  Settings,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
 import logo from '../assets/IBrewWhite.png';
 
 const Layout: React.FC = () => {
+  const { t } = useTranslation();
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
 
   const handleLogout = () => {
     logout();
@@ -24,12 +29,12 @@ const Layout: React.FC = () => {
   };
 
   const navItems = [
-    { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-    { to: '/pos', icon: <ShoppingCart size={20} />, label: 'PDV' },
-    { to: '/produtos', icon: <Package size={20} />, label: 'Produtos' },
-    { to: '/categorias', icon: <Tags size={20} />, label: 'Categorias' },
-    { to: '/vendas', icon: <History size={20} />, label: 'Vendas' },
-    { to: '/configuracoes', icon: <Settings size={20} />, label: 'Configurações' },
+    { to: '/dashboard', icon: <LayoutDashboard size={20} />, label: t('sidebar.dashboard') },
+    { to: '/pos', icon: <ShoppingCart size={20} />, label: t('sidebar.pos') },
+    { to: '/produtos', icon: <Package size={20} />, label: t('sidebar.products') },
+    { to: '/categorias', icon: <Tags size={20} />, label: t('sidebar.categories') },
+    { to: '/vendas', icon: <History size={20} />, label: t('sidebar.sales') },
+    { to: '/configuracoes', icon: <Settings size={20} />, label: t('sidebar.settings') },
   ];
 
   return (
@@ -37,13 +42,18 @@ const Layout: React.FC = () => {
       {/* Sidebar */}
       <motion.aside 
         initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
+        animate={{ 
+          x: 0, 
+          opacity: 1,
+          width: isCollapsed ? '90px' : '280px'
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="sidebar-scroll"
         style={{ 
-          width: '280px', 
           margin: '12px', 
           display: 'flex', 
           flexDirection: 'column',
-          padding: '1.5rem',
+          padding: isCollapsed ? '1.5rem 0.75rem' : '1.5rem',
           height: 'calc(100vh - 24px)',
           background: 'rgba(255, 255, 255, 0.25)',
           backdropFilter: 'blur(40px)',
@@ -51,15 +61,54 @@ const Layout: React.FC = () => {
           border: '1px solid rgba(255, 255, 255, 0.5)',
           borderRadius: '28px',
           boxShadow: '0 32px 64px rgba(0, 0, 0, 0.15), inset 0 2px 4px rgba(255,255,255,0.7)',
-          zIndex: 10
+          zIndex: 10,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          position: 'relative'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', padding: '0 8px' }}>
-          <img 
-            src={logo} 
-            alt="iBranch" 
-            style={{ width: '220px', height: 'auto' }} 
-          />
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          style={{
+            position: 'absolute',
+            top: '24px',
+            right: isCollapsed ? '50%' : '16px',
+            transform: isCollapsed ? 'translateX(50%)' : 'none',
+            zIndex: 20,
+            background: 'rgba(255,255,255,0.4)',
+            border: '1px solid rgba(255,255,255,0.6)',
+            width: '32px',
+            height: '32px',
+            borderRadius: '10px',
+            padding: 0,
+            color: 'var(--blue)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+          }}
+        >
+          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </button>
+
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          marginBottom: '2rem', 
+          padding: '0 8px',
+          opacity: isCollapsed ? 0 : 1,
+          height: isCollapsed ? '20px' : 'auto',
+          transition: 'all 0.3s ease',
+          pointerEvents: isCollapsed ? 'none' : 'auto'
+        }}>
+          {!isCollapsed && (
+            <img 
+              src={logo} 
+              alt="iBranch" 
+              style={{ width: '100%', maxWidth: '200px', height: 'auto' }} 
+            />
+          )}
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
@@ -71,13 +120,14 @@ const Layout: React.FC = () => {
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
                 gap: '12px',
                 padding: '12px 16px',
                 borderRadius: '16px',
                 textDecoration: 'none',
                 color: isActive ? 'var(--blue)' : '#666',
                 fontWeight: isActive ? '800' : '600',
-                transition: 'color 0.3s ease',
+                transition: 'all 0.3s ease',
               })}
             >
               {({ isActive }) => (
@@ -99,23 +149,32 @@ const Layout: React.FC = () => {
                       }}
                     />
                   )}
-                  <span style={{ 
+                  <div style={{ 
                     position: 'relative',
                     zIndex: 1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '36px',
+                    minWidth: '36px',
                     height: '36px',
                     background: isActive ? 'linear-gradient(135deg, var(--blue), var(--sub-yellow))' : 'transparent',
                     color: isActive ? 'white' : 'var(--blue)', 
                     borderRadius: '12px',
                     boxShadow: isActive ? '0 4px 12px rgba(0, 63, 130, 0.2)' : 'none',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    flexShrink: 0
                   }}>
                     {item.icon}
-                  </span>
-                  <span style={{ position: 'relative', zIndex: 1 }}>{item.label}</span>
+                  </div>
+                  {!isCollapsed && (
+                    <motion.span 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      style={{ position: 'relative', zIndex: 1, whiteSpace: 'nowrap' }}
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
                 </>
               )}
             </NavLink>
@@ -127,9 +186,10 @@ const Layout: React.FC = () => {
             onClick={() => navigate('/perfil')}
             style={{ 
               marginBottom: '1.5rem', 
-              padding: '12px 16px', 
+              padding: isCollapsed ? '12px' : '12px 16px', 
               display: 'flex', 
               alignItems: 'center', 
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
               gap: '12px',
               cursor: 'pointer',
               borderRadius: '20px',
@@ -139,17 +199,23 @@ const Layout: React.FC = () => {
             onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
             onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.02)')}
           >
-            <div style={{ width: '44px', height: '44px', background: 'var(--blue)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 'bold', overflow: 'hidden' }}>
+            <div style={{ width: '44px', height: '44px', background: 'var(--blue)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 'bold', overflow: 'hidden', flexShrink: 0 }}>
               {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 user?.name?.charAt(0)
               )}
             </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--black)' }}>{user?.name}</p>
-              <p style={{ fontSize: '0.75rem', color: '#888' }}>{user?.role === 'ADMIN' ? 'Administrador' : 'Operador'}</p>
-            </div>
+            {!isCollapsed && (
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                style={{ flex: 1, overflow: 'hidden' }}
+              >
+                <p style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--black)', whiteSpace: 'nowrap' }}>{user?.name}</p>
+                <p style={{ fontSize: '0.75rem', color: '#888', whiteSpace: 'nowrap' }}>{user?.role === 'ADMIN' ? 'Administrador' : 'Operador'}</p>
+              </motion.div>
+            )}
           </div>
           
           <button 
@@ -158,13 +224,17 @@ const Layout: React.FC = () => {
               width: '100%', 
               background: 'rgba(255, 59, 48, 0.05)', 
               color: '#FF3B30',
-              padding: '12px',
+              padding: isCollapsed ? '12px 0' : '12px',
               boxShadow: 'none',
-              borderRadius: '16px'
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
             }}
           >
             <LogOut size={20} />
-            Sair
+            {!isCollapsed && <span>{t('sidebar.logout')}</span>}
           </button>
         </div>
       </motion.aside>
@@ -175,8 +245,9 @@ const Layout: React.FC = () => {
         style={{ 
           flex: 1, 
           height: '100vh',
-          padding: '2rem 3rem',
-          position: 'relative'
+          padding: isCollapsed ? '2rem 1.5rem' : '2rem 3rem',
+          position: 'relative',
+          transition: 'padding 0.3s ease'
         }}
       >
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>

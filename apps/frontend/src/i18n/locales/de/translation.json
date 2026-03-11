@@ -1,0 +1,59 @@
+{
+  "common": {
+    "systemName": "iBranch System",
+    "saveAll": "Alles Speichern",
+    "saved": "Gespeichert!",
+    "loading": "Laden...",
+    "error": "Fehler beim Verarbeiten der Anfrage"
+  },
+  "settings": {
+    "title": "Einstellungsmenü",
+    "subtitle": "Personalisieren Sie jedes Detail Ihres Premium-Erlebnisses.",
+    "bank": {
+      "title": "Bankdaten & PIX",
+      "subtitle": "Wo Sie Ihre Verkäufe erhalten.",
+      "institution": "Finanzinstitut",
+      "pix": "Primärer PIX-Schlüssel"
+    },
+    "fees": {
+      "title": "Betriebsgebühren",
+      "subtitle": "Von Kartenverkäufen abgezogene Provisionen.",
+      "debit": "Lastschriftgebühr",
+      "credit": "Kreditkartengebühr"
+    },
+    "languages": {
+      "title": "Systemsprachen",
+      "subtitle": "Wählen Sie die globale Übersetzung der Benutzeroberfläche.",
+      "pt": "Portugiesisch",
+      "en": "Englisch",
+      "es": "Spanisch",
+      "de": "Deutsch"
+    },
+    "audio": {
+      "title": "Ton & Lautstärke",
+      "subtitle": "Audio-Feedback (Auto-Save).",
+      "dragHint": "Zum Anpassen Ziehen",
+      "enabled": "Ton Aktiviert",
+      "muted": "Ton Stumm"
+    }
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "pos": "Kasse",
+    "products": "Produkte",
+    "categories": "Kategorien",
+    "sales": "Verkäufe",
+    "settings": "Einstellungen",
+    "logout": "Abmelden"
+  },
+  "dashboard": {
+    "title": "Allgemeines Panel",
+    "subtitle": "Verfolgen Sie Ihre iBranch-Leistung in Echtzeit.",
+    "revenue": "Umsatz Heute",
+    "sales": "Verkäufe Heute",
+    "lowStock": "Wenig Lagerbestand"
+  },
+  "categories": {
+    "linked_products": "produkte in der kategorie"
+  }
+}

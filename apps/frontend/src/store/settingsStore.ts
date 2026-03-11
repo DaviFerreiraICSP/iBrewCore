@@ -15,6 +15,7 @@ interface Settings {
     credit: number;
     brands: string[];
   };
+  language: string;
 }
 
 interface SettingsState {

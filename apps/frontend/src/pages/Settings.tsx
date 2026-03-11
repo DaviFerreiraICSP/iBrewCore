@@ -1,88 +1,125 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { 
   Volume2, 
   CreditCard, 
   Building2, 
   Save, 
-  CheckCircle2, 
   Loader2,
   Percent,
-  Layers
+  Sparkles,
+  Globe,
+  ThumbsUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/settingsStore';
 import GlassCard from '../components/GlassCard';
 
+const GlassOrbIcon: React.FC<{ icon: React.ReactNode; color: string; delay?: number }> = ({ icon, color, delay = 0 }) => (
+  <motion.div
+    animate={{ 
+      y: [0, -6, 0],
+      rotate: [0, 2, 0, -2, 0]
+    }}
+    transition={{ 
+      duration: 5, 
+      repeat: Infinity, 
+      ease: "easeInOut",
+      delay 
+    }}
+    style={{ 
+      width: '52px', 
+      height: '52px', 
+      background: 'rgba(255, 255, 255, 0.4)', 
+      backdropFilter: 'blur(10px)',
+      borderRadius: '50%', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      color: color,
+      border: '1px solid rgba(255, 255, 255, 0.5)',
+      boxShadow: `0 10px 20px -5px ${color}33, inset 0 2px 8px rgba(255,255,255,0.8)`
+    }}
+  >
+    {icon}
+  </motion.div>
+);
+
 const Settings: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { settings, loading, fetchSettings, updateSettings } = useSettingsStore();
   const [localSettings, setLocalSettings] = useState(settings);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
   const [error, setError] = useState('');
+  const [stretch, setStretch] = useState(1);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
   useEffect(() => {
-    if (settings) {
+    if (settings && !localSettings) {
       setLocalSettings(settings);
+      if (settings.language && i18n.language !== settings.language) {
+        i18n.changeLanguage(settings.language);
+      }
     }
-  }, [settings]);
+  }, [settings, localSettings, i18n]);
 
-  const audioCtxRef = React.useRef<AudioContext | null>(null);
+  // Deep comparison to enable/disable Save All button
+  const hasChanges = localSettings && settings && (
+    JSON.stringify({ ...localSettings, audio_enabled: settings.audio_enabled, audio_volume: settings.audio_volume }) !== 
+    JSON.stringify(settings)
+  );
+
+  const autoSaveAudio = useCallback(async (newVolume?: number, newEnabled?: boolean) => {
+    if (!localSettings) return;
+    try {
+      await updateSettings({
+        ...localSettings,
+        ...(newVolume !== undefined && { audio_volume: newVolume }),
+        ...(newEnabled !== undefined && { audio_enabled: newEnabled })
+      });
+    } catch (err) {
+      console.error("Auto-save audio failed", err);
+    }
+  }, [localSettings, updateSettings]);
 
   const playTestSound = (volumePercent: number) => {
     if (!audioCtxRef.current) {
       audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
-    
     const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
-
+    if (ctx.state === 'suspended') ctx.resume();
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
-
     oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(880, ctx.currentTime); // A5
-    
-    const volume = volumePercent / 600; // Adjusted for pleasant test sound
-    
+    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+    const volume = volumePercent / 600;
     gainNode.gain.setValueAtTime(volume, ctx.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
-
     oscillator.start();
     oscillator.stop(ctx.currentTime + 0.1);
   };
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseInt(e.target.value);
-    setLocalSettings(prev => prev ? ({ ...prev, audio_volume: newVolume }) : null);
-    playTestSound(newVolume);
-  };
-
-  const showSuccess = (msg: string) => {
-    setSuccessToast(msg);
-    setTimeout(() => setSuccessToast(null), 3000);
-  };
-
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!localSettings) return;
-
+    if (!localSettings || !hasChanges) return;
     setIsSubmitting(true);
     setError('');
-
     try {
       await updateSettings(localSettings);
-      showSuccess('Configurações salvas com sucesso!');
+      if (localSettings.language) {
+        i18n.changeLanguage(localSettings.language);
+      }
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err: any) {
-      setError('Erro ao salvar configurações.');
+      setError(t('common.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -90,328 +127,277 @@ const Settings: React.FC = () => {
 
   if (loading && !localSettings) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}>
-        <Loader2 className="animate-spin" size={40} color="var(--blue)" />
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '10rem' }}>
+        <Loader2 className="animate-spin" size={48} color="var(--blue)" />
       </div>
     );
   }
 
+  const languages = [
+    { code: 'pt', name: t('settings.languages.pt'), flag: '🇧🇷' },
+    { code: 'de', name: t('settings.languages.de'), flag: '🇩🇪' },
+    { code: 'en', name: t('settings.languages.en'), flag: '🇺🇸' },
+    { code: 'es', name: t('settings.languages.es'), flag: '🇪🇸' }
+  ];
+
   return (
-    <div className="animate-fade-in" style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      <header style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '2.25rem', fontWeight: '800', color: 'var(--black)', marginBottom: '0.5rem' }}>Configurações</h1>
-        <p style={{ color: '#666' }}>Personalize o comportamento do sistema e dados financeiros.</p>
+    <div className="animate-fade-in" style={{ maxWidth: '1100px', margin: '0 auto', paddingBottom: '6rem' }}>
+      <header style={{ marginBottom: '3.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--blue)', marginBottom: '8px' }}>
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}>
+              <Sparkles size={18} />
+            </motion.div>
+            <span style={{ fontSize: '0.8rem', fontWeight: '800', letterSpacing: '2px', textTransform: 'uppercase' }}>{t('common.systemName')}</span>
+          </div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--black)', letterSpacing: '-1.5px' }}>{t('settings.title')}</h1>
+          <p style={{ color: '#666', fontSize: '1.1rem' }}>{t('settings.subtitle')}</p>
+        </div>
+        
+        <motion.button 
+          onClick={handleUpdate}
+          className={saveStatus === 'success' ? "" : "liquid-glass"} 
+          disabled={isSubmitting || (!hasChanges && saveStatus === 'idle')} 
+          animate={saveStatus === 'success' ? { backgroundColor: '#34C759', scale: [1, 1.05, 1] } : {}}
+          style={{ 
+            height: '56px', 
+            padding: '0 40px', 
+            borderRadius: '20px',
+            background: saveStatus === 'success' ? '#34C759' : undefined,
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            opacity: (!hasChanges && saveStatus === 'idle') ? 0.5 : 1,
+            cursor: (!hasChanges && saveStatus === 'idle') ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {isSubmitting ? (
+            <Loader2 className="animate-spin" />
+          ) : saveStatus === 'success' ? (
+            <><ThumbsUp size={20} /> {t('common.saved')}</>
+          ) : (
+            <><Save size={20} /> {t('common.saveAll')}</>
+          )}
+        </motion.button>
       </header>
 
-      <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <form onSubmit={handleUpdate} style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '2.5rem' }}>
         
-        {/* Audio Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <GlassCard style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2rem' }}>
-              <div style={{ width: '40px', height: '40px', background: 'rgba(21, 101, 192, 0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--blue)' }}>
-                <Volume2 size={24} />
-              </div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Preferências de Áudio</h2>
-            </div>
-
-            <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-              {/* Vertical Volume Bar (iOS Style) */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                <div 
-                  style={{ 
-                    width: '40px', 
-                    height: '160px', 
-                    background: '#F0F0F0', 
-                    borderRadius: '20px', 
-                    position: 'relative', 
-                    overflow: 'hidden',
-                    cursor: 'pointer',
-                    border: '1px solid rgba(0,0,0,0.05)'
-                  }}
-                  onMouseDown={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const updateVolume = (clientY: number) => {
-                      const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-                      const percent = Math.round(100 - (y / rect.height) * 100);
-                      handleVolumeChange({ target: { value: percent.toString() } } as any);
-                    };
-                    updateVolume(e.clientY);
-                    
-                    const onMouseMove = (moveEvent: MouseEvent) => updateVolume(moveEvent.clientY);
-                    const onMouseUp = () => {
-                      window.removeEventListener('mousemove', onMouseMove);
-                      window.removeEventListener('mouseup', onMouseUp);
-                    };
-                    window.addEventListener('mousemove', onMouseMove);
-                    window.addEventListener('mouseup', onMouseUp);
-                  }}
-                >
-                  <motion.div 
-                    initial={false}
-                    animate={{ height: `${localSettings?.audio_volume || 0}%` }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    style={{ 
-                      position: 'absolute', 
-                      bottom: 0, 
-                      left: 0, 
-                      right: 0, 
-                      background: 'var(--blue)',
-                      opacity: 0.9
-                    }} 
-                  />
-                  <div style={{ 
-                    position: 'absolute', 
-                    top: '50%', 
-                    left: '50%', 
-                    transform: 'translate(-50%, -50%)', 
-                    color: (localSettings?.audio_volume || 0) > 50 ? 'white' : 'var(--blue)',
-                    pointerEvents: 'none',
-                    fontWeight: '800',
-                    fontSize: '0.8rem',
-                    zIndex: 2
-                  }}>
-                    {localSettings?.audio_volume}%
-                  </div>
-                </div>
-                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#888' }}>Volume</span>
-              </div>
-
-              {/* Toggles and Info */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(0,0,0,0.02)', borderRadius: '16px' }}>
-                  <div>
-                    <p style={{ fontWeight: '700', fontSize: '0.9rem', marginBottom: '4px' }}>Efeitos Sonoros</p>
-                    <p style={{ fontSize: '0.8rem', color: '#666', lineHeight: '1.4' }}>Sons de sucesso e alertas no sistema iBrew.</p>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => setLocalSettings(prev => prev ? ({ ...prev, audio_enabled: !prev.audio_enabled }) : null)}
-                    style={{ 
-                      width: '32px', 
-                      height: '16px', 
-                      minHeight: '16px',
-                      borderRadius: '8px', 
-                      background: localSettings?.audio_enabled ? 'var(--blue)' : '#DDD',
-                      border: 'none',
-                      position: 'relative',
-                      cursor: 'pointer',
-                      padding: '0',
-                      flexShrink: 0,
-                      transition: 'background 0.2s ease'
-                    }}
-                  >
-                    <motion.div 
-                      animate={{ x: localSettings?.audio_enabled ? 18 : 2 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      style={{ 
-                        width: '12px', 
-                        height: '12px', 
-                        background: 'white', 
-                        borderRadius: '50%',
-                        position: 'absolute',
-                        top: '2px',
-                        left: '0',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                      }}
-                    />
-                  </button>
-                </div>
-
-                <div style={{ padding: '1rem', background: 'rgba(21, 101, 192, 0.05)', borderRadius: '16px', border: '1px solid rgba(21, 101, 192, 0.1)' }}>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--blue)', fontWeight: '600' }}>
-                    💡 Dica: Arraste a barra para ajustar o volume. O som de teste tocará automaticamente.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </GlassCard>
-        </motion.div>
-
-        {/* Bank Details */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <GlassCard style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2rem' }}>
-              <div style={{ width: '40px', height: '40px', background: 'rgba(217, 160, 54, 0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--main-yellow)' }}>
-                <Building2 size={24} />
-              </div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Dados Bancários & PIX</h2>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+          
+          {/* Bank Details */}
+          <GlassCard style={{ padding: '2.5rem', borderRadius: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2.5rem' }}>
+              <GlassOrbIcon icon={<Building2 size={24} />} color="var(--main-yellow)" />
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '8px' }}>Banco</label>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900' }}>{t('settings.bank.title')}</h2>
+                <p style={{ fontSize: '0.85rem', color: '#666' }}>{t('settings.bank.subtitle')}</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#999', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('settings.bank.institution')}</label>
                 <input 
                   type="text" 
-                  placeholder="Ex: Nubank, Itaú..."
                   value={localSettings?.bank_info?.name || ''}
                   onChange={(e) => setLocalSettings(prev => prev ? ({ ...prev, bank_info: { ...prev.bank_info, name: e.target.value } }) : null)}
-                  style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}
+                  style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)', height: '54px', borderRadius: '16px' }}
                 />
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '8px' }}>Chave PIX</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#999', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('settings.bank.pix')}</label>
                 <input 
                   type="text" 
-                  placeholder="E-mail, CPF ou Aleatória"
                   value={localSettings?.bank_info?.pix || ''}
                   onChange={(e) => setLocalSettings(prev => prev ? ({ ...prev, bank_info: { ...prev.bank_info, pix: e.target.value } }) : null)}
-                  style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '8px' }}>Agência</label>
-                <input 
-                  type="text" 
-                  value={localSettings?.bank_info?.agency || ''}
-                  onChange={(e) => setLocalSettings(prev => prev ? ({ ...prev, bank_info: { ...prev.bank_info, agency: e.target.value } }) : null)}
-                  style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '8px' }}>Conta</label>
-                <input 
-                  type="text" 
-                  value={localSettings?.bank_info?.account || ''}
-                  onChange={(e) => setLocalSettings(prev => prev ? ({ ...prev, bank_info: { ...prev.bank_info, account: e.target.value } }) : null)}
-                  style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)' }}
+                  style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)', height: '54px', borderRadius: '16px' }}
                 />
               </div>
             </div>
           </GlassCard>
-        </motion.div>
 
-        {/* Card Fees */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <GlassCard style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2rem' }}>
-              <div style={{ width: '40px', height: '40px', background: 'rgba(214, 40, 40, 0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D62828' }}>
-                <CreditCard size={24} />
+          {/* Card Fees */}
+          <GlassCard style={{ padding: '2.5rem', borderRadius: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2.5rem' }}>
+              <GlassOrbIcon icon={<CreditCard size={24} />} color="#D62828" delay={1} />
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900' }}>{t('settings.fees.title')}</h2>
+                <p style={{ fontSize: '0.85rem', color: '#666' }}>{t('settings.fees.subtitle')}</p>
               </div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: '800' }}>Taxas de Cartão</h2>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '8px' }}>Taxa de Débito (%)</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#999', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('settings.fees.debit')}</label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Percent size={16} style={{ position: 'absolute', right: '16px', opacity: 0.4 }} />
+                  <Percent size={18} style={{ position: 'absolute', left: '16px', opacity: 0.4 }} />
                   <input 
                     type="number" 
                     step="0.01"
                     value={localSettings?.card_rates?.debit || 0}
                     onChange={(e) => setLocalSettings(prev => prev ? ({ ...prev, card_rates: { ...prev.card_rates, debit: parseFloat(e.target.value) } }) : null)}
-                    style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)', paddingRight: '40px' }}
+                    style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)', height: '54px', borderRadius: '16px', paddingLeft: '48px' }}
                   />
                 </div>
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', marginBottom: '8px' }}>Taxa de Crédito (%)</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: '900', color: '#999', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('settings.fees.credit')}</label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Percent size={16} style={{ position: 'absolute', right: '16px', opacity: 0.4 }} />
+                  <Percent size={18} style={{ position: 'absolute', left: '16px', opacity: 0.4 }} />
                   <input 
                     type="number" 
                     step="0.01"
                     value={localSettings?.card_rates?.credit || 0}
                     onChange={(e) => setLocalSettings(prev => prev ? ({ ...prev, card_rates: { ...prev.card_rates, credit: parseFloat(e.target.value) } }) : null)}
-                    style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)', paddingRight: '40px' }}
+                    style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)', height: '54px', borderRadius: '16px', paddingLeft: '48px' }}
                   />
                 </div>
               </div>
             </div>
+          </GlassCard>
 
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: '700', marginBottom: '12px' }}>
-                <Layers size={16} /> Bandeiras Aceitas
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {['Visa', 'Mastercard', 'Elo', 'Hipercard', 'Amex'].map(brand => {
-                  const isSelected = localSettings?.card_rates?.brands.includes(brand);
-                  return (
-                    <button
-                      key={brand}
-                      type="button"
-                      onClick={() => {
-                        if (!localSettings) return;
-                        const brands = isSelected 
-                          ? localSettings.card_rates.brands.filter(b => b !== brand)
-                          : [...localSettings.card_rates.brands, brand];
-                        setLocalSettings({ ...localSettings, card_rates: { ...localSettings.card_rates, brands } });
-                      }}
-                      style={{ 
-                        padding: '8px 16px', 
-                        borderRadius: '12px', 
-                        fontSize: '0.85rem',
-                        background: isSelected ? 'var(--black)' : 'rgba(0,0,0,0.05)',
-                        color: isSelected ? 'white' : '#666',
-                        border: 'none',
-                        transition: 'all 0.2s',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {brand}
-                    </button>
-                  )
-                })}
+          {/* Language Selection */}
+          <GlassCard style={{ padding: '2.5rem', borderRadius: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2.5rem' }}>
+              <GlassOrbIcon icon={<Globe size={24} />} color="#6B46C1" delay={1.5} />
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900' }}>{t('settings.languages.title')}</h2>
+                <p style={{ fontSize: '0.85rem', color: '#666' }}>{t('settings.languages.subtitle')}</p>
               </div>
             </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+              {languages.map((lang) => (
+                <motion.div
+                  key={lang.code}
+                  whileHover={{ y: -4 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setLocalSettings(prev => prev ? ({ ...prev, language: lang.code }) : null);
+                    i18n.changeLanguage(lang.code);
+                  }}
+                  style={{ 
+                    padding: '20px', 
+                    borderRadius: '24px', 
+                    background: localSettings?.language === lang.code ? 'var(--blue)' : 'rgba(0,0,0,0.03)',
+                    color: localSettings?.language === lang.code ? 'white' : 'var(--black)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    border: '1px solid rgba(0,0,0,0.05)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <span style={{ fontSize: '1.5rem' }}>{lang.flag}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '900' }}>{lang.name}</span>
+                </motion.div>
+              ))}
+            </div>
           </GlassCard>
-        </motion.div>
 
-        {error && (
-          <div style={{ padding: '12px', background: 'rgba(255, 59, 48, 0.1)', color: '#FF3B30', borderRadius: '12px', textAlign: 'center' }}>
-            {error}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4rem' }}>
-          <button type="submit" className="liquid-glass" disabled={isSubmitting} style={{ minWidth: '200px', height: '56px' }}>
-            {isSubmitting ? <Loader2 className="animate-spin" /> : <><Save size={20} /> Salvar Tudo</>}
-          </button>
         </div>
+
+        {/* Lado Direito */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+          
+          {/* Audio Section */}
+          <GlassCard style={{ padding: '2.5rem', borderRadius: '32px', minHeight: '500px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2.5rem' }}>
+              <GlassOrbIcon icon={<Volume2 size={24} />} color="var(--blue)" delay={2} />
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900' }}>{t('settings.audio.title')}</h2>
+                <p style={{ fontSize: '0.85rem', color: '#666' }}>{t('settings.audio.subtitle')}</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2.5rem' }}>
+              
+              <div 
+                style={{ 
+                  width: '64px', height: '280px', background: 'rgba(0,0,0,0.04)', borderRadius: '32px', 
+                  position: 'relative', padding: '8px', cursor: 'pointer', border: '1px solid rgba(0,0,0,0.05)', boxShadow: 'inset 0 10px 30px rgba(0,0,0,0.06)'
+                }}
+                onMouseDown={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  let lastY = e.clientY;
+                  const updateVolume = (clientY: number) => {
+                    const deltaY = clientY - lastY;
+                    lastY = clientY;
+                    setStretch(Math.max(0.75, Math.min(1.25, 1 - (deltaY / 150))));
+                    const relativeY = Math.max(0, Math.min(rect.height - 16, clientY - (rect.top + 8)));
+                    const percent = Math.round(100 - (relativeY / (rect.height - 16)) * 100);
+                    setLocalSettings(prev => prev ? ({ ...prev, audio_volume: percent }) : null);
+                    playTestSound(percent);
+                  };
+                  updateVolume(e.clientY);
+                  const onMouseMove = (m: MouseEvent) => updateVolume(m.clientY);
+                  const onMouseUp = () => {
+                    setStretch(1);
+                    autoSaveAudio();
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                  };
+                  window.addEventListener('mousemove', onMouseMove);
+                  window.addEventListener('mouseup', onMouseUp);
+                }}
+              >
+                <motion.div 
+                  animate={{ height: `${localSettings?.audio_volume || 0}%`, scaleY: stretch, opacity: (localSettings?.audio_volume || 0) / 100 * 0.3 }}
+                  style={{ position: 'absolute', bottom: '8px', left: '8px', right: '8px', borderRadius: '24px', background: 'var(--blue)', filter: 'blur(15px)', originY: 1, zIndex: 1 }} 
+                />
+                <motion.div 
+                  animate={{ height: `calc(${(localSettings?.audio_volume || 0)}% - ${((localSettings?.audio_volume || 0) / 100) * 16}px)`, scaleY: stretch }}
+                  transition={{ height: { type: 'spring', stiffness: 200, damping: 20 }, scaleY: { type: 'spring', stiffness: 400, damping: 12 } }}
+                  style={{ 
+                    position: 'absolute', bottom: '8px', left: '8px', right: '8px', minHeight: (localSettings?.audio_volume || 0) > 0 ? '40px' : '0',
+                    background: 'linear-gradient(180deg, var(--blue) 0%, #0d47a1 100%)', borderRadius: '24px', originY: 1,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.15)', zIndex: 2,
+                    boxShadow: '0 15px 30px rgba(13, 71, 161, 0.4), inset 0 2px 8px rgba(255,255,255,0.3)'
+                  }} 
+                >
+                  <span style={{ color: 'white', fontWeight: '900', fontSize: '0.85rem' }}>{localSettings?.audio_volume}%</span>
+                </motion.div>
+              </div>
+
+              {/* Proportional Toggle */}
+              <div 
+                onClick={() => {
+                  const newEnabled = !localSettings?.audio_enabled;
+                  setLocalSettings(prev => prev ? ({ ...prev, audio_enabled: newEnabled }) : null);
+                  autoSaveAudio(undefined, newEnabled);
+                }}
+                style={{ 
+                  width: '100%', padding: '1.2rem', background: 'rgba(0,0,0,0.03)', borderRadius: '24px', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer'
+                }}
+              >
+                <span style={{ fontWeight: '800', fontSize: '0.95rem' }}>{localSettings?.audio_enabled ? t('settings.audio.enabled') : t('settings.audio.muted')}</span>
+                <div style={{ 
+                  width: '56px', height: '30px', borderRadius: '15px', background: localSettings?.audio_enabled ? '#34C759' : '#DDD',
+                  position: 'relative', transition: 'background 0.3s'
+                }}>
+                  <motion.div 
+                    animate={{ x: localSettings?.audio_enabled ? 28 : 2 }}
+                    style={{ width: '26px', height: '26px', background: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: '0', boxShadow: '0 2px 5px rgba(0,0,0,0.2)' }}
+                  />
+                </div>
+              </div>
+
+            </div>
+          </GlassCard>
+        </div>
+
       </form>
 
       <AnimatePresence>
-        {successToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            style={{
-              position: 'fixed',
-              bottom: '40px',
-              left: '50%',
-              marginLeft: '-150px',
-              width: '300px',
-              zIndex: 10000,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '16px 24px',
-              background: 'rgba(255,255,255,0.95)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: '24px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-              color: 'var(--black)',
-              fontWeight: '700'
-            }}
-          >
-            <div style={{ width: '32px', height: '32px', background: '#34C759', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <CheckCircle2 color="white" size={20} />
-            </div>
-            <span style={{ fontSize: '0.9rem' }}>{successToast}</span>
+        {error && (
+          <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)', padding: '16px 24px', background: '#FF3B30', color: 'white', borderRadius: '20px', fontWeight: '800', zIndex: 10000 }}>
+            {error}
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,0 +1,59 @@
+{
+  "common": {
+    "systemName": "Sistema iBranch",
+    "saveAll": "Salvar Tudo",
+    "saved": "Salvo!",
+    "loading": "Carregando...",
+    "error": "Erro ao processar solicitação"
+  },
+  "settings": {
+    "title": "Painel de Configurações",
+    "subtitle": "Personalize cada detalhe da sua experiência premium.",
+    "bank": {
+      "title": "Dados Bancários & PIX",
+      "subtitle": "Onde você recebe suas vendas.",
+      "institution": "Instituição Financeira",
+      "pix": "Chave PIX Principal"
+    },
+    "fees": {
+      "title": "Taxas de Operação",
+      "subtitle": "Comissões descontadas das vendas no cartão.",
+      "debit": "Taxa Débito",
+      "credit": "Taxa Crédito"
+    },
+    "languages": {
+      "title": "Idiomas do Sistema",
+      "subtitle": "Selecione a tradução global da interface.",
+      "pt": "Português",
+      "en": "Inglês",
+      "es": "Espanhol",
+      "de": "Alemão"
+    },
+    "audio": {
+      "title": "Som & Volume",
+      "subtitle": "Feedback sonoro (Auto-save).",
+      "dragHint": "Arrastar para Ajustar",
+      "enabled": "Som Ativado",
+      "muted": "Som Mudo"
+    }
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "pos": "PDV",
+    "products": "Produtos",
+    "categories": "Categorias",
+    "sales": "Vendas",
+    "settings": "Configurações",
+    "logout": "Sair"
+  },
+  "dashboard": {
+    "title": "Painel Geral",
+    "subtitle": "Acompanhe o desempenho da sua iBranch em tempo real.",
+    "revenue": "Faturamento Hoje",
+    "sales": "Vendas Hoje",
+    "lowStock": "Itens em Baixa"
+  },
+  "categories": {
+    "linked_products": "produtos na categoria"
+  }
+}
