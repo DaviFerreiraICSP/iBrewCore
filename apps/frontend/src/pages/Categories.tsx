@@ -24,7 +24,6 @@ import {
   Beef,
   Cake,
   Sandwich,
-  X,
   Palette
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -212,12 +211,25 @@ const Categories: React.FC = () => {
   }, [iconSearch]);
 
   return (
-    <div className="animate-fade-in" style={{ position: 'relative' }}>
+    <motion.div 
+      initial="hidden"
+      animate="show"
+      variants={{
+        show: { transition: { staggerChildren: 0.05 } }
+      }}
+      style={{ position: 'relative' }}
+    >
       <DynamicSymbol top="10%" left="5%" size="150px" delay={0} />
       <DynamicSymbol top="60%" left="85%" size="120px" delay={2} />
       <DynamicSymbol top="80%" left="20%" size="180px" delay={4} />
 
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3.5rem' }}>
+      <motion.header 
+        variants={{
+          hidden: { opacity: 0, y: -20 },
+          show: { opacity: 1, y: 0 }
+        }}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3.5rem' }}
+      >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--blue)', marginBottom: '8px' }}>
             <motion.div animate={{ y: [0, -3, 0] }} transition={{ duration: 2, repeat: Infinity }}>
@@ -237,23 +249,29 @@ const Categories: React.FC = () => {
         >
           <Plus size={20} /> Nova Categoria
         </motion.button>
-      </header>
+      </motion.header>
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '10rem' }}>
           <Loader2 className="animate-spin" size={48} color="var(--blue)" />
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+        <motion.div 
+          variants={{
+            show: { transition: { staggerChildren: 0.05 } }
+          }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}
+        >
           <AnimatePresence>
             {categories.map((category) => (
               <motion.div
                 key={category.id}
                 layoutId={`category-${category.id}`}
                 layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
+                variants={{
+                  hidden: { opacity: 0, y: 30, scale: 0.95 },
+                  show: { opacity: 1, y: 0, scale: 1 }
+                }}
                 whileHover={{ y: -8 }}
               >
                 <GlassCard style={{ padding: '2rem', borderRadius: '28px', height: '100%', display: 'flex', flexDirection: 'column', transition: 'box-shadow 0.3s' }}>
@@ -300,10 +318,8 @@ const Categories: React.FC = () => {
               </motion.div>
             ))}
           </AnimatePresence>
-        </div>
+        </motion.div>
       )}
-
-      {/* Modal Categoria */}
       {isModalOpen && createPortal(
         <AnimatePresence mode="wait">
           <motion.div 
@@ -511,7 +527,7 @@ const Categories: React.FC = () => {
         </AnimatePresence>,
         document.body
       )}
-    </div>
+    </motion.div>
   );
 };
 

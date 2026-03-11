@@ -250,15 +250,33 @@ const POS: React.FC = () => {
 
   return (
     <>
-      <div className="animate-fade-in" style={{ display: 'flex', gap: '2rem', height: 'calc(100vh - 4.5rem)' }}>
-        {/* Products Selection Area */}
+    <motion.div 
+      initial="hidden"
+      animate="show"
+      variants={{
+        show: { transition: { staggerChildren: 0.05 } }
+      }}
+      style={{ display: 'flex', gap: '2rem', height: 'calc(100vh - 4.5rem)' }}
+    >
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <header style={{ marginBottom: '1.5rem' }}>
+        <motion.header 
+          variants={{
+            hidden: { opacity: 0, x: -20 },
+            show: { opacity: 1, x: 0 }
+          }}
+          style={{ marginBottom: '1.5rem' }}
+        >
           <h1 style={{ fontSize: '2.25rem', fontWeight: '800', color: 'var(--black)' }}>PDV</h1>
           <p style={{ color: '#666' }}>Selecione os produtos para o carrinho.</p>
-        </header>
+        </motion.header>
 
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+        <motion.div 
+          variants={{
+            hidden: { opacity: 0, y: 10 },
+            show: { opacity: 1, y: 0 }
+          }}
+          style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}
+        >
           <div style={{ position: 'relative', flex: 1 }}>
             <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
             <input 
@@ -275,7 +293,7 @@ const POS: React.FC = () => {
               }}
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Categories Tab */}
         <div 
@@ -575,7 +593,7 @@ const POS: React.FC = () => {
           </div>
         </GlassCard>
       </div>
-    </div>
+    {/* Cart Selection End */}
 
       {/* Checkout Modal */}
       {createPortal(
@@ -746,6 +764,7 @@ const POS: React.FC = () => {
         document.body
       )}
 
+      </motion.div>
     </>
   );
 };
