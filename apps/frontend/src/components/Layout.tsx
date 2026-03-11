@@ -11,7 +11,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/authStore';
 import logo from '../assets/IBrewWhite.png';
@@ -251,7 +251,27 @@ const Layout: React.FC = () => {
         }}
       >
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          <Outlet />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={window.location.pathname}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              variants={{
+                hidden: { opacity: 0 },
+                show: { 
+                  opacity: 1,
+                  transition: { 
+                    staggerChildren: 0.08,
+                    delayChildren: 0.1
+                  } 
+                },
+                exit: { opacity: 0, transition: { duration: 0.2 } }
+              }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>
