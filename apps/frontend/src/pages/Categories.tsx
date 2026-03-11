@@ -525,6 +525,7 @@ const Categories: React.FC = () => {
             </motion.div>
           </motion.div>
         </AnimatePresence>,
+        document.body
       )}
     </motion.div>
   );
