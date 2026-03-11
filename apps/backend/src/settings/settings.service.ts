@@ -16,7 +16,8 @@ export class SettingsService implements OnModuleInit {
       { key: 'audio_enabled', value: 'true' },
       { key: 'audio_volume', value: '50' },
       { key: 'bank_info', value: JSON.stringify({ name: '', agency: '', account: '', pix: '' }) },
-      { key: 'card_rates', value: JSON.stringify({ debit: 0, credit: 0, brands: ['Visa', 'Mastercard'] }) }
+      { key: 'card_rates', value: JSON.stringify({ debit: 0, credit: 0, brands: ['Visa', 'Mastercard'] }) },
+      { key: 'language', value: '"pt"' }
     ];
 
     for (const item of defaults) {
@@ -40,10 +41,15 @@ export class SettingsService implements OnModuleInit {
   }
 
   async update(settings: Record<string, any>) {
-    for (const [key, value] of Object.entries(settings)) {
-      const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-      await this.settingsRepository.save({ key, value: stringValue });
+    const entries = Object.entries(settings).map(([key, value]) => ({
+      key,
+      value: typeof value === 'string' ? value : JSON.stringify(value),
+    }));
+
+    for (const entry of entries) {
+      await this.settingsRepository.upsert(entry, ['key']);
     }
+    
     return this.findAll();
   }
 }

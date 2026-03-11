@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, DollarSign, AlertTriangle, Package } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import GlassCard from '../components/GlassCard';
 
@@ -12,6 +13,7 @@ interface DashboardStats {
 }
 
 const Dashboard: React.FC = () => {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,19 +31,19 @@ const Dashboard: React.FC = () => {
     fetchStats();
   }, []);
 
-  if (loading) return <div>Carregando métricas...</div>;
+  if (loading) return <div>{t('common.loading')}</div>;
 
   const kpiData = [
-    { label: 'Faturamento Hoje', value: `R$ ${stats?.revenueToday.toFixed(2)}`, icon: <DollarSign />, color: '#2EA7F2' },
-    { label: 'Vendas Hoje', value: stats?.salesCountToday, icon: <TrendingUp />, color: '#F2CA7E' },
-    { label: 'Itens em Baixa', value: stats?.lowStock.length, icon: <AlertTriangle />, color: '#FF3B30' },
+    { label: t('dashboard.revenue'), value: `R$ ${stats?.revenueToday.toFixed(2)}`, icon: <DollarSign />, color: '#2EA7F2' },
+    { label: t('dashboard.sales'), value: stats?.salesCountToday, icon: <TrendingUp />, color: '#F2CA7E' },
+    { label: t('dashboard.lowStock'), value: stats?.lowStock.length, icon: <AlertTriangle />, color: '#FF3B30' },
   ];
 
   return (
     <div className="animate-fade-in">
       <header style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: '800' }}>Painel Geral</h1>
-        <p style={{ color: '#666' }}>Acompanhe o desempenho da sua iBrew em tempo real.</p>
+        <h1 style={{ fontSize: '2rem', fontWeight: '800' }}>{t('dashboard.title')}</h1>
+        <p style={{ color: '#666' }}>{t('dashboard.subtitle')}</p>
       </header>
 
       <div style={{ 

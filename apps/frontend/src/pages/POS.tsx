@@ -12,7 +12,24 @@ import {
   QrCode,
   X,
   ThumbsUp,
-  CreditCard
+  CreditCard,
+  Utensils,
+  Coffee,
+  Beer,
+  Pizza,
+  IceCream,
+  Wine,
+  Apple,
+  Croissant,
+  Dessert,
+  Milk,
+  Drumstick,
+  Fish,
+  Cookie,
+  Beef,
+  Cake,
+  Sandwich,
+  Tags
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
@@ -22,6 +39,8 @@ import { useSettingsStore } from '../store/settingsStore';
 interface Category {
   id: number;
   name: string;
+  icon?: string;
+  color?: string;
 }
 
 interface Product {
@@ -38,6 +57,26 @@ interface CartItem {
   product: Product;
   quantity: number;
 }
+
+const LucideIconMap: Record<string, React.ReactNode> = {
+  Utensils: <Utensils size={18} />,
+  Coffee: <Coffee size={18} />,
+  Beer: <Beer size={18} />,
+  Pizza: <Pizza size={18} />,
+  IceCream: <IceCream size={18} />,
+  Wine: <Wine size={18} />,
+  Apple: <Apple size={18} />,
+  Croissant: <Croissant size={18} />,
+  Dessert: <Dessert size={18} />,
+  Milk: <Milk size={18} />,
+  Drumstick: <Drumstick size={18} />,
+  Fish: <Fish size={18} />,
+  Cookie: <Cookie size={18} />,
+  Beef: <Beef size={18} />,
+  Cake: <Cake size={18} />,
+  Sandwich: <Sandwich size={18} />,
+  Tags: <Tags size={18} />
+};
 
 const POS: React.FC = () => {
   const { settings, fetchSettings } = useSettingsStore();
@@ -328,7 +367,18 @@ const POS: React.FC = () => {
                       }}
                     />
                   )}
-                  {c.name}
+                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ 
+                      width: '8px', 
+                      height: '8px', 
+                      borderRadius: '50%', 
+                      background: c.color || 'var(--blue)',
+                      boxShadow: selectedCategoryTab === c.id ? `0 0 12px ${c.color || 'var(--blue)'}` : 'none',
+                      transition: 'all 0.3s'
+                    }} />
+                    {LucideIconMap[c.icon || 'Tags']}
+                    {c.name}
+                  </div>
                 </motion.button>
               ))}
           </motion.div>
@@ -441,9 +491,30 @@ const POS: React.FC = () => {
       {/* Cart Sidebar */}
       <div style={{ width: '380px', display: 'flex', flexDirection: 'column' }} ref={cartRef}>
         <GlassCard style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1.5rem', borderRadius: '28px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
-            <ShoppingCart size={24} color="var(--main-yellow)" />
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '800' }}>Carrinho</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '1.5rem' }}>
+            <motion.div 
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              style={{ 
+                width: '48px', 
+                height: '48px', 
+                background: 'linear-gradient(135deg, var(--blue), var(--sub-yellow))', 
+                borderRadius: '50%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                color: 'white',
+                boxShadow: '0 8px 24px rgba(0, 63, 130, 0.25), inset 0 2px 4px rgba(255,255,255,0.4)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                backdropFilter: 'blur(10px)',
+                WebkitBackdropFilter: 'blur(10px)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 50%)', pointerEvents: 'none' }} />
+              <ShoppingCart size={22} style={{ position: 'relative', zIndex: 1 }} />
+            </motion.div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--black)' }}>Carrinho</h2>
           </div>
 
           <div className="app-scroll" style={{ flex: 1, overflowX: 'hidden' }}>
@@ -510,38 +581,78 @@ const POS: React.FC = () => {
       {createPortal(
         <AnimatePresence>
           {isCheckoutModalOpen && (
-            <div style={{ position: 'fixed', inset: 0, top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'fixed', inset: 0, top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <motion.div layoutId="checkout-modal" style={{ width: '100%', maxWidth: '450px' }}>
                 <GlassCard style={{ background: 'white', padding: '2.5rem', borderRadius: '32px' }}>
                   {!isConfirmingCheckout ? (
                     <>
                       <h2 style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: '800', marginBottom: '2rem' }}>Pagamento</h2>
                       
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '2rem' }}>
-                        <div 
-                          onClick={() => setPaymentMethod('CASH')}
-                          style={{ 
-                            padding: '16px', 
-                            borderRadius: '16px', 
-                            border: '2px solid', 
-                            borderColor: paymentMethod === 'CASH' ? 'var(--blue)' : '#EEE', 
-                            background: paymentMethod === 'CASH' ? 'rgba(0,122,255,0.05)' : 'white', 
-                            cursor: 'pointer', 
-                            textAlign: 'center' 
-                          }}
-                        >
-                          <Banknote size={24} color={paymentMethod === 'CASH' ? 'var(--blue)' : '#CCC'} style={{ margin: '0 auto 8px' }} />
-                          <span style={{ fontSize: '0.8rem', fontWeight: '800', color: paymentMethod === 'CASH' ? 'var(--blue)' : '#888' }}>Dinheiro</span>
-                        </div>
-                        <div style={{ padding: '16px', borderRadius: '16px', border: '2px solid transparent', background: '#F5F5F5', opacity: 0.5, cursor: 'not-allowed', textAlign: 'center', position: 'relative' }}>
-                          <div style={{ position: 'absolute', top: '4px', right: '4px', fontSize: '0.6rem', color: '#999', fontWeight: '800' }}>SÓ</div>
-                          <CreditCard size={24} color="#CCC" style={{ margin: '0 auto 8px' }} />
-                          <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#BBB' }}>Cartão</span>
-                        </div>
-                        <div style={{ padding: '16px', borderRadius: '16px', border: '2px solid transparent', background: '#F5F5F5', opacity: 0.5, cursor: 'not-allowed', textAlign: 'center' }}>
-                          <QrCode size={24} color="#CCC" style={{ margin: '0 auto 8px' }} />
-                          <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#BBB' }}>PIX</span>
-                        </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '2rem' }}>
+                        {[
+                          { id: 'CASH' as const, icon: <Banknote size={24} />, label: 'Dinheiro' },
+                          { id: 'CARD' as const, icon: <CreditCard size={24} />, label: 'Cartão', disabled: true },
+                          { id: 'PIX' as const, icon: <QrCode size={24} />, label: 'PIX', disabled: true }
+                        ].map((method) => (
+                          <motion.div 
+                            key={method.id}
+                            whileHover={!method.disabled ? { scale: 1.05, y: -4 } : {}}
+                            whileTap={!method.disabled ? { scale: 0.95 } : {}}
+                            onClick={() => !method.disabled && setPaymentMethod(method.id)}
+                            style={{ 
+                              padding: '20px 12px', 
+                              borderRadius: '24px', 
+                              border: '2px solid', 
+                              borderColor: paymentMethod === method.id ? 'var(--blue)' : 'rgba(0,0,0,0.05)', 
+                              background: paymentMethod === method.id 
+                                ? 'linear-gradient(135deg, rgba(0, 63, 130, 0.1), rgba(0, 63, 130, 0.05))' 
+                                : 'rgba(255, 255, 255, 0.6)', 
+                              backdropFilter: 'blur(10px)',
+                              WebkitBackdropFilter: 'blur(10px)',
+                              cursor: method.disabled ? 'not-allowed' : 'pointer', 
+                              textAlign: 'center',
+                              opacity: method.disabled ? 0.5 : 1,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '8px',
+                              boxShadow: paymentMethod === method.id 
+                                ? '0 12px 24px rgba(0, 63, 130, 0.15), inset 0 2px 4px rgba(255,255,255,0.8)'
+                                : '0 4px 12px rgba(0,0,0,0.03)',
+                              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              position: 'relative',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            {paymentMethod === method.id && (
+                              <motion.div 
+                                layoutId="payment-active-glow"
+                                style={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  background: 'linear-gradient(135deg, transparent, rgba(255,255,255,0.4), transparent)',
+                                  zIndex: 0
+                                }}
+                              />
+                            )}
+                            <div style={{ 
+                              color: paymentMethod === method.id ? 'var(--blue)' : '#888',
+                              position: 'relative',
+                              zIndex: 1
+                            }}>
+                              {method.icon}
+                            </div>
+                            <span style={{ 
+                              fontSize: '0.85rem', 
+                              fontWeight: '800', 
+                              color: paymentMethod === method.id ? 'var(--blue)' : '#888',
+                              position: 'relative',
+                              zIndex: 1 
+                            }}>
+                              {method.label}
+                            </span>
+                          </motion.div>
+                        ))}
                       </div>
 
                       <div style={{ background: '#F8F9FA', padding: '1.5rem', borderRadius: '20px', marginBottom: '2rem', border: '1px solid rgba(0,0,0,0.05)' }}>
@@ -556,11 +667,17 @@ const POS: React.FC = () => {
                       </div>
 
                       <div style={{ display: 'flex', gap: '12px' }}>
-                        <button onClick={() => setIsCheckoutModalOpen(false)} style={{ flex: 1, background: '#F0F0F0', color: '#333', fontWeight: '800' }}>Cancelar</button>
+                        <button 
+                          onClick={() => setIsCheckoutModalOpen(false)} 
+                          className="liquid-glass-red"
+                          style={{ flex: 1, height: '54px', borderRadius: '16px' }}
+                        >
+                          Cancelar
+                        </button>
                         <button 
                           onClick={() => setIsConfirmingCheckout(true)}
                           className="liquid-glass" 
-                          style={{ flex: 2, background: 'var(--black)' }}
+                          style={{ flex: 2, height: '54px', background: 'var(--black)', borderRadius: '16px' }}
                         >
                           Avançar
                         </button>
@@ -580,7 +697,14 @@ const POS: React.FC = () => {
                       </div>
 
                       <div style={{ display: 'flex', gap: '12px' }}>
-                        <button onClick={() => setIsConfirmingCheckout(false)} disabled={isSubmitting || showSuccessAnimation} style={{ flex: 1, background: '#F0F0F0', color: '#333', fontWeight: '800' }}>Voltar</button>
+                        <button 
+                          onClick={() => setIsConfirmingCheckout(false)} 
+                          disabled={isSubmitting || showSuccessAnimation} 
+                          className="liquid-glass"
+                          style={{ flex: 1, height: '54px', background: 'rgba(0,0,0,0.05)', color: '#333', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '16px' }}
+                        >
+                          Voltar
+                        </button>
                         <motion.button 
                           onClick={handleCheckout} 
                           disabled={isSubmitting || showSuccessAnimation} 
@@ -589,7 +713,7 @@ const POS: React.FC = () => {
                             background: showSuccessAnimation ? '#34C759' : 'var(--black)',
                           }}
                           transition={{ duration: 0.3 }}
-                          style={{ flex: 2, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', borderRadius: '12px', fontWeight: '800' }}
+                          style={{ flex: 2, height: '54px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: 'none', borderRadius: '16px', fontWeight: '800' }}
                         >
                           {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : 
                            showSuccessAnimation ? (

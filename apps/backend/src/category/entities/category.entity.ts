@@ -12,6 +12,12 @@ export class Category {
     @Column({ type: 'varchar', length: 255, nullable: true })
     description: string;
 
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    icon: string;
+
+    @Column({ type: 'varchar', length: 50, nullable: true, default: '#003f82' })
+    color: string;
+
     @OneToMany(() => Product, (product) => product.category)
     products: Product[];
 

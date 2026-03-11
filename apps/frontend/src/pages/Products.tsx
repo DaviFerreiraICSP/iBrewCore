@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Plus, 
   Trash2, 
@@ -15,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 import { useSettingsStore } from '../store/settingsStore';
 import GlassCard from '../components/GlassCard';
+import ImageCropper from '../components/ImageCropper';
 
 interface Category {
   id: number;
@@ -57,6 +59,7 @@ const Products: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [transitionId, setTransitionId] = useState<string | null>(null);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const categoriesWrapperRef = React.useRef<HTMLDivElement>(null);
 
   const playSuccessSound = () => {
@@ -107,6 +110,17 @@ const Products: React.FC = () => {
     fetchData();
     fetchSettings();
   }, []);
+
+  useEffect(() => {
+    if (isModalOpen || isDeleteModalOpen || !!imageToCrop) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isModalOpen, isDeleteModalOpen, imageToCrop]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,9 +208,9 @@ const Products: React.FC = () => {
     setIsDragging(false);
   };
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (file: File | Blob) => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', file, 'product-image.jpg');
 
     try {
       setIsSubmitting(true);
@@ -206,10 +220,22 @@ const Products: React.FC = () => {
       // Handle the URL from backend which starts with /uploads/
       const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
       setImageUrl(`${baseUrl}${res.data.url}`);
+      setImageToCrop(null);
     } catch (err) {
       setError('Falha ao enviar imagem.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageToCrop(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -508,8 +534,8 @@ const Products: React.FC = () => {
       </div>
 
       {/* Modal Novo Produto */}
-      <AnimatePresence>
-        {isModalOpen && (
+      {isModalOpen && createPortal(
+      <AnimatePresence mode="wait">
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -520,8 +546,8 @@ const Products: React.FC = () => {
               left: 0, 
               width: '100vw', 
               height: '100vh', 
-              background: 'rgba(0,0,0,0.6)', 
-              backdropFilter: 'blur(12px)',
+              background: 'rgba(0,0,0,0.85)', 
+              backdropFilter: 'blur(20px)',
               display: 'flex', 
               justifyContent: 'center',
               alignItems: 'flex-start',
@@ -642,10 +668,7 @@ const Products: React.FC = () => {
                       <input 
                         type="file" 
                         ref={fileInputRef} 
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file);
-                        }}
+                        onChange={handleSelectFile}
                         style={{ display: 'none' }} 
                         accept="image/*"
                       />
@@ -719,6 +742,16 @@ const Products: React.FC = () => {
               </GlassCard>
             </motion.div>
           </motion.div>
+        </AnimatePresence>, document.body)}
+
+      <AnimatePresence>
+        {imageToCrop && (
+          <ImageCropper 
+            image={imageToCrop} 
+            aspect={1} 
+            onCropComplete={handleFileUpload} 
+            onCancel={() => setImageToCrop(null)} 
+          />
         )}
       </AnimatePresence>
 
@@ -811,15 +844,11 @@ const Products: React.FC = () => {
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button 
                   onClick={() => setIsDeleteModalOpen(false)}
+                  className="liquid-glass-red"
                   style={{ 
                     flex: 1, 
                     height: '50px', 
-                    borderRadius: '15px', 
-                    border: '1px solid #EEE', 
-                    background: '#FFF', 
-                    color: 'var(--black)',
-                    fontWeight: '700',
-                    cursor: 'pointer'
+                    borderRadius: '15px' 
                   }}
                 >
                   Cancelar
